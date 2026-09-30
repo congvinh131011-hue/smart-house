@@ -1,5 +1,5 @@
 // ==========================================
-// 1. Cấu hình giao diện thiết bị
+// 1. Cấu hình giao diện & trạng thái thiết bị
 // ==========================================
 const deviceConfigs = {
     door: {
@@ -31,103 +31,83 @@ const deviceConfigs = {
 const deviceStates = {
     door: false,
     canvas: false,
-    light: false
+    light: false,
+    fired: false,
+    water: false
 };
 
-// Lưu biến Timer đếm ngược 60s cho việc quét Wi-Fi
-let wifiScanTimeout = null;
-
-// ==========================================
-// 2. Đồng bộ thời gian thực với Firebase Realtime Database
-// ==========================================
-
+// Ref chính tới Realtime Database node 'smart_house'
 const devicesRef = rtdb.ref('smart_house');
-const wifiScanRef = rtdb.ref('wifi_scan_results');
-const wifiConfigRef = rtdb.ref('wifi_config');
-const wifiStatusRef = rtdb.ref('wifi_status');
 
-/**
- * Lắng nghe trạng thái các thiết bị
- */
+// ==========================================
+// 2. Lắng nghe dữ liệu thời gian thực từ Firebase
+// ==========================================
 devicesRef.on('value', (snapshot) => {
     const data = snapshot.val();
     if (!data) return;
 
+    // Cập nhật trạng thái các nút điều khiển thiết bị
     Object.keys(deviceConfigs).forEach((deviceKey) => {
         if (data[deviceKey] !== undefined) {
             deviceStates[deviceKey] = data[deviceKey];
             updateUI(deviceKey, deviceStates[deviceKey]);
         }
     });
+
+    // Cập nhật cảnh báo Cháy (fired)
+    if (data.fired !== undefined) {
+        deviceStates.fired = data.fired;
+        checkSafetyAlert('fired', data.fired);
+    }
+
+    // Cập nhật cảnh báo Hồ bơi (water)
+    if (data.water !== undefined) {
+        deviceStates.water = data.water;
+        checkSafetyAlert('water', data.water);
+    }
 });
 
+// ==========================================
+// 3. Hàm xử lý Cảnh báo Khẩn cấp
+// ==========================================
+
 /**
- * Lắng nghe danh sách Wi-Fi gửi từ ESP32
+ * Kiểm tra và bật/tắt khung cảnh báo trên giao diện
  */
-wifiScanRef.on('value', (snapshot) => {
-    const wifiList = snapshot.val();
-    
-    // Nếu ESP32 gửi dữ liệu về, hủy ngay bộ đếm 60 giây timeout
-    if (wifiScanTimeout) {
-        clearTimeout(wifiScanTimeout);
-        wifiScanTimeout = null;
-    }
+function checkSafetyAlert(key, isTriggered) {
+    const alertEl = document.getElementById(key === 'fired' ? 'alert-fire' : 'alert-water');
+    if (!alertEl) return;
 
-    // Mở lại nút "Quét lại"
-    const scanBtn = document.getElementById('btn-scan-wifi');
-    if (scanBtn) {
-        scanBtn.disabled = false;
-        scanBtn.innerHTML = `<i class="fa-solid fa-rotate"></i> Quét lại`;
+    if (isTriggered === true) {
+        alertEl.classList.remove('d-none');
+        alertEl.classList.add('d-flex');
+    } else {
+        alertEl.classList.remove('d-flex');
+        alertEl.classList.add('d-none');
     }
-
-    renderWifiList(wifiList);
-});
+}
 
 /**
- * Lắng nghe trạng thái kết nối Wi-Fi từ ESP32
- * (ESP32 ghi vào node 'wifi_status' các giá trị: 'connecting', 'connected', 'wrong_password', 'failed')
+ * Gửi lệnh lên Firebase để tắt cảnh báo (đưa fired hoặc water về false)
  */
-wifiStatusRef.on('value', (snapshot) => {
-    const status = snapshot.val();
-    const alertBox = document.getElementById('wifi-connection-alert');
-    const alertIcon = document.getElementById('wifi-alert-icon');
-    const alertMsg = document.getElementById('wifi-alert-message');
-    const submitBtn = document.getElementById('btn-submit-wifi');
+function dismissAlert(key) {
+    if (key !== 'fired' && key !== 'water') return;
 
-    if (!alertBox || !status) return;
+    rtdb.ref(`smart_house/${key}`).set(false)
+        .then(() => {
+            console.log(`Đã tắt cảnh báo ${key}`);
+        })
+        .catch((error) => {
+            console.error(`Lỗi khi tắt cảnh báo ${key}:`, error);
+        });
+}
 
-    // Reset các class màu cũ
-    alertBox.className = 'alert d-flex align-items-center mb-4';
-
-    if (status === 'connecting') {
-        alertBox.classList.add('alert-warning');
-        alertIcon.className = 'fa-solid fa-spinner fa-spin me-2 fs-5';
-        alertMsg.innerHTML = '<strong>Đang kết nối:</strong> ESP32 đang thử kết nối tới mạng Wi-Fi...';
-        if (submitBtn) submitBtn.disabled = true;
-    } 
-    else if (status === 'connected') {
-        alertBox.classList.add('alert-success');
-        alertIcon.className = 'fa-solid fa-circle-check me-2 fs-5';
-        alertMsg.innerHTML = '<strong>Thành công:</strong> ESP32 đã kết nối Wi-Fi thành công!';
-        if (submitBtn) submitBtn.disabled = false;
-    } 
-    else if (status === 'wrong_password' || status === 'failed') {
-        alertBox.classList.add('alert-danger');
-        alertIcon.className = 'fa-solid fa-circle-xmark me-2 fs-5';
-        alertMsg.innerHTML = '<strong>Thất bại:</strong> Mật khẩu Wi-Fi không chính xác hoặc không thể kết nối tới mạng này!';
-        if (submitBtn) submitBtn.disabled = false;
-    } 
-    else {
-        alertBox.classList.add('alert-secondary');
-        alertIcon.className = 'fa-solid fa-circle-info me-2 fs-5';
-        alertMsg.innerHTML = 'Chưa có yêu cầu kết nối nào gần đây.';
-        if (submitBtn) submitBtn.disabled = false;
-    }
-});
-
+// ==========================================
+// 4. Hàm điều khiển thiết bị & Giao diện
+// ==========================================
 
 /**
- * Cập nhật giao diện nút bấm, dòng chữ trạng thái, Icon thiết bị
+ * Cập nhật nút bấm, text và icon của thiết bị
  */
 function updateUI(deviceKey, isOpenOrOn) {
     const btn = document.getElementById(`btn-${deviceKey}`);
@@ -159,7 +139,7 @@ function updateUI(deviceKey, isOpenOrOn) {
 }
 
 /**
- * Đổi trạng thái thiết bị khi người dùng nhấn nút
+ * Thay đổi trạng thái On/Off thiết bị khi bấm nút
  */
 function toggleDevice(deviceKey) {
     if (!(deviceKey in deviceStates)) return;
@@ -168,15 +148,15 @@ function toggleDevice(deviceKey) {
 
     rtdb.ref(`smart_house/${deviceKey}`).set(newState)
         .then(() => {
-            console.log(`Đã cập nhật ${deviceKey} thành: ${newState}`);
+            console.log(`Cập nhật ${deviceKey}: ${newState}`);
         })
         .catch((error) => {
-            console.error(`Lỗi khi gửi dữ liệu cho ${deviceKey}:`, error);
+            console.error(`Lỗi cập nhật ${deviceKey}:`, error);
         });
 }
 
 // ==========================================
-// 3. Chuyển đổi Tab Panel
+// 5. Chuyển đổi Tab Panel (Sidebar)
 // ==========================================
 function showPanel(panelId, element) {
     const panels = document.querySelectorAll('.panel');
