@@ -4,16 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart House</title>
-    <!-- Font Google Inter & Icon FontAwesome -->
+    <title>Smart House Control Center</title>
+
+    <!-- Font Google Inter & FontAwesome -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- CSS Cá nhân -->
-    <link rel="stylesheet" href="style.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="./style.css">
 </head>
 
 <body>
@@ -28,7 +29,7 @@
 
     <!-- Main Container -->
     <div class="app-container">
-        <!-- Sidebar / Navigation -->
+        <!-- Sidebar Navigation -->
         <nav class="sidebar">
             <ul class="nav-list">
                 <li>
@@ -64,61 +65,89 @@
                 <div class="panel-body">
                     <p>Chào mừng bạn đến với hệ thống Smart House! Dưới đây là hướng dẫn sử dụng các chức năng của hệ thống:</p>
                     <ul>
-                        <li>Truy cập vào mục <strong>House Wi-Fi</strong> để chọn Wi-Fi mà ngôi nhà/ESP32 sử dụng.</li>
-                        <li>Sau đó vào mục <strong>Functional</strong> để điều khiển thiết bị như bình thường.</li>
+                        <li>Truy cập vào mục <strong>Functional</strong> để theo dõi trạng thái và điều khiển thiết bị.</li>
+                        <li>Khi có cảnh báo <strong>Cháy</strong> hoặc <strong>Hồ bơi</strong>, hệ thống sẽ hiển thị bảng thông báo khẩn cấp cùng nút tắt cảnh báo.</li>
                     </ul>
                 </div>
             </section>
 
-          
-
-            <!-- Panel 3: Functional -->
+            <!-- Panel 2: Functional -->
             <section id="function" class="panel">
                 <div class="panel-header">
                     <h1><i class="fa-solid fa-gears"></i> Functional</h1>
                     <p class="subtitle">Bảng điều khiển & Chức năng hệ thống</p>
                 </div>
                 <div class="panel-body">
+
+                    <!-- Khu vực cảnh báo Khẩn cấp (Cháy & Hồ bơi) -->
+                    <div id="alert-container" class="mb-4">
+                        <!-- Cảnh báo cháy -->
+                        <div id="alert-fire" class="alert alert-danger align-items-center justify-content-between d-none shadow-sm" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fa-solid fa-fire-flame-curved fa-bounce me-3 fs-3"></i>
+                                <div>
+                                    <h5 class="alert-heading mb-1 fw-bold">CẢNH BÁO CHÁY!</h5>
+                                    <span>Hệ thống phát hiện nhiệt độ/khói bất thường trong nhà!</span>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-danger bg-white text-danger fw-bold ms-3" onclick="dismissAlert('fired')">
+                                <i class="fa-solid fa-bell-slash me-1"></i> Tắt cảnh báo
+                            </button>
+                        </div>
+
+                        <!-- Cảnh báo hồ bơi -->
+                        <div id="alert-water" class="alert alert-warning align-items-center justify-content-between d-none shadow-sm" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fa-solid fa-person-swimming fa-fade me-3 fs-3"></i>
+                                <div>
+                                    <h5 class="alert-heading mb-1 fw-bold">CẢNH BÁO HỒ BƠI!</h5>
+                                    <span>Phát hiện có người/chuyển động tại khu vực hồ bơi!</span>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-warning text-dark bg-white fw-bold ms-3" onclick="dismissAlert('water')">
+                                <i class="fa-solid fa-bell-slash me-1"></i> Tắt cảnh báo
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Bảng điều khiển thiết bị -->
                     <div class="controls-grid">
 
-                        <!-- Card 1: Điều khiển Cửa -->
+                        <!-- Card 1: Cửa chính -->
                         <div class="control-card">
                             <div class="card-icon"><i class="fa-solid fa-door-closed" id="icon-door"></i></div>
                             <div class="card-info">
                                 <h3>Cửa chính</h3>
                                 <p class="status-text" id="status-door">Trạng thái: Đang đóng</p>
                             </div>
-                            <button type="button" class="btn btn-success action-btn w-100" id="btn-door"
-                                onclick="toggleDevice('door')">Mở cửa</button>
+                            <button type="button" class="btn btn-success action-btn w-100" id="btn-door" onclick="toggleDevice('door')">Mở cửa</button>
                         </div>
 
-                        <!-- Card 2: Điều khiển Bạt che mưa -->
+                        <!-- Card 2: Bạt che mưa -->
                         <div class="control-card">
                             <div class="card-icon"><i class="fa-solid fa-umbrella" id="icon-canvas"></i></div>
                             <div class="card-info">
                                 <h3>Bạt che mưa</h3>
                                 <p class="status-text" id="status-canvas">Trạng thái: Đã thu lại</p>
                             </div>
-                            <button type="button" class="btn btn-success action-btn w-100" id="btn-canvas"
-                                onclick="toggleDevice('canvas')">Kéo bạt</button>
+                            <button type="button" class="btn btn-success action-btn w-100" id="btn-canvas" onclick="toggleDevice('canvas')">Kéo bạt</button>
                         </div>
 
-                        <!-- Card 3: Điều khiển Đèn -->
+                        <!-- Card 3: Đèn hệ thống -->
                         <div class="control-card">
                             <div class="card-icon"><i class="fa-regular fa-lightbulb" id="icon-light"></i></div>
                             <div class="card-info">
                                 <h3>Đèn hệ thống</h3>
                                 <p class="status-text" id="status-light">Trạng thái: Đã tắt</p>
                             </div>
-                            <button type="button" class="btn btn-success action-btn w-100" id="btn-light"
-                                onclick="toggleDevice('light')">Bật đèn</button>
+                            <button type="button" class="btn btn-success action-btn w-100" id="btn-light" onclick="toggleDevice('light')">Bật đèn</button>
                         </div>
 
                     </div>
                 </div>
             </section>
 
-            <!-- Panel 4: Credit -->
+            <!-- Panel 3: Credit -->
             <section id="credit" class="panel">
                 <div class="panel-header">
                     <h1><i class="fa-solid fa-circle-info"></i> Credit</h1>
@@ -147,18 +176,16 @@
         <p class="mb-0">Smart House &copy; 2026. All rights reserved.</p>
     </footer>
 
-    <!-- Thư viện Firebase Realtime Database -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/12.15.0/firebase-app-compat.min.js"
-        referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/12.15.0/firebase-database-compat.min.js"
-        referrerpolicy="no-referrer"></script>
+    <!-- Firebase Realtime Database SDK (Compat) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/12.15.0/firebase-app-compat.min.js" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/12.15.0/firebase-database-compat.min.js" referrerpolicy="no-referrer"></script>
 
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- JS Cá nhân -->
-    <script src="firebase-config.js"></script>
-    <script src="script.js"></script>
+    <!-- App Scripts -->
+    <script src="./firebase-config.js"></script>
+    <script src="./script.js"></script>
 </body>
 
 </html>
