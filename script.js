@@ -1,176 +1,131 @@
 // ==========================================
-// 1. Cấu hình giao diện & trạng thái thiết bị
+// 1. Config
 // ==========================================
 const deviceConfigs = {
-    door: {
-        onText: "Đóng cửa",
-        offText: "Mở cửa",
-        statusOn: "Trạng thái: Đang mở",
-        statusOff: "Trạng thái: Đang đóng",
-        iconOn: "fa-solid fa-door-open",
-        iconOff: "fa-solid fa-door-closed"
+    light: {
+        path: 'Control/Light State',
+        onText: "Tắt đèn", offText: "Bật đèn",
+        statusOn: "Trạng thái: Đã bật", statusOff: "Trạng thái: Đã tắt",
+        iconOn: "fa-solid fa-lightbulb text-warning", iconOff: "fa-regular fa-lightbulb"
     },
     canvas: {
-        onText: "Thu bạt",
-        offText: "Kéo bạt",
-        statusOn: "Trạng thái: Đã kéo ra",
-        statusOff: "Trạng thái: Đã thu lại",
-        iconOn: "fa-solid fa-umbrella",
-        iconOff: "fa-solid fa-umbrella"
-    },
-    light: {
-        onText: "Tắt đèn",
-        offText: "Bật đèn",
-        statusOn: "Trạng thái: Đã bật",
-        statusOff: "Trạng thái: Đã tắt",
-        iconOn: "fa-solid fa-lightbulb",
-        iconOff: "fa-regular fa-lightbulb"
+        path: 'Control/Roof State',
+        onText: "Thu bạt", offText: "Kéo bạt",
+        statusOn: "Trạng thái: Đã kéo ra", statusOff: "Trạng thái: Đã thu lại",
+        iconOn: "fa-solid fa-umbrella text-primary", iconOff: "fa-solid fa-umbrella"
     }
 };
 
-const deviceStates = {
-    door: false,
-    canvas: false,
-    light: false,
-    fired: false,
-    water: false
+const sensorConfigs = {
+    isRain:     { on: "Đang có mưa",          off: "Trời không mưa" },
+    isLighting: { on: "Đèn ngủ đang bật",     off: "Đèn ngủ đang tắt" },
+    isInRange:  { on: "Có người trong vùng",  off: "Không có ai" },
+    isSmoke:    { on: "Phát hiện khói!",      off: "Bình thường" }
 };
 
-// Ref chính tới Realtime Database node 'smart_house'
-const devicesRef = rtdb.ref('smart_house');
+// Gộp chung Cảm biến Đèn ngủ (isLighting) vào hệ thống Alerts
+const alertConfigs = {
+    isSmoke:    'alert-fire',
+    isInRange:  'alert-water',
+    isRain:     'alert-rain',
+    isLighting: 'alert-nightlight'
+};
+
+const deviceStates = { light: false, canvas: false };
+const rootRef = rtdb.ref();
 
 // ==========================================
-// 2. Lắng nghe dữ liệu thời gian thực từ Firebase
+// 2. Realtime listener
 // ==========================================
-devicesRef.on('value', (snapshot) => {
+rootRef.on('value', (snapshot) => {
     const data = snapshot.val();
     if (!data) return;
 
-    // Cập nhật trạng thái các nút điều khiển thiết bị
-    Object.keys(deviceConfigs).forEach((deviceKey) => {
-        if (data[deviceKey] !== undefined) {
-            deviceStates[deviceKey] = data[deviceKey];
-            updateUI(deviceKey, deviceStates[deviceKey]);
+    const control = data.Control || {};
+    const sensor = data.Sensor || {};
+
+    // Cập nhật trạng thái thiết bị
+    Object.keys(deviceConfigs).forEach((key) => {
+        const dbKey = deviceConfigs[key].path.split('/')[1];
+        if (control[dbKey] !== undefined) {
+            deviceStates[key] = control[dbKey];
+            updateUI(key, deviceStates[key]);
         }
     });
 
-    // Cập nhật cảnh báo Cháy (fired)
-    if (data.fired !== undefined) {
-        deviceStates.fired = data.fired;
-        checkSafetyAlert('fired', data.fired);
-    }
+    // Cập nhật tất cả các Cảm biến & Alert 
+    Object.keys(sensorConfigs).forEach((key) => {
+        if (sensor[key] === undefined) return;
+        updateSensor(key, sensor[key]);
 
-    // Cập nhật cảnh báo Hồ bơi (water)
-    if (data.water !== undefined) {
-        deviceStates.water = data.water;
-        checkSafetyAlert('water', data.water);
-    }
+        if (alertConfigs[key]) {
+            checkSafetyAlert(key, !!sensor[key]);
+        }
+    });
 });
 
 // ==========================================
-// 3. Hàm xử lý Cảnh báo Khẩn cấp
+// 3. Sensors & Alerts
 // ==========================================
+function updateSensor(key, value) {
+    const el = document.getElementById(`sensor-${key}`);
+    if (!el) return;
+    el.textContent = value ? sensorConfigs[key].on : sensorConfigs[key].off;
+    el.classList.toggle('active', !!value);
+}
 
-/**
- * Kiểm tra và bật/tắt khung cảnh báo trên giao diện
- */
-function checkSafetyAlert(key, isTriggered) {
-    const alertEl = document.getElementById(key === 'fired' ? 'alert-fire' : 'alert-water');
+function checkSafetyAlert(sensorKey, show) {
+    const alertEl = document.getElementById(alertConfigs[sensorKey]);
     if (!alertEl) return;
-
-    if (isTriggered === true) {
-        alertEl.classList.remove('d-none');
-        alertEl.classList.add('d-flex');
-    } else {
-        alertEl.classList.remove('d-flex');
-        alertEl.classList.add('d-none');
-    }
+    alertEl.classList.toggle('d-flex', !!show);
+    alertEl.classList.toggle('d-none', !show);
 }
 
-/**
- * Gửi lệnh lên Firebase để tắt cảnh báo (đưa fired hoặc water về false)
- */
-function dismissAlert(key) {
-    if (key !== 'fired' && key !== 'water') return;
-
-    rtdb.ref(`smart_house/${key}`).set(false)
-        .then(() => {
-            console.log(`Đã tắt cảnh báo ${key}`);
-        })
-        .catch((error) => {
-            console.error(`Lỗi khi tắt cảnh báo ${key}:`, error);
-        });
+// Bấm nút "Tắt cảnh báo" sẽ đưa giá trị trên Firebase về false
+function dismissAlert(sensorKey) {
+    if (!(sensorKey in alertConfigs)) return;
+    
+    rtdb.ref(`Sensor/${sensorKey}`).set(false)
+        .then(() => console.log(`Cập nhật Sensor/${sensorKey}: false`))
+        .catch((error) => console.error(`Lỗi cập nhật Sensor/${sensorKey}:`, error));
 }
 
 // ==========================================
-// 4. Hàm điều khiển thiết bị & Giao diện
+// 4. Device Control
 // ==========================================
-
-/**
- * Cập nhật nút bấm, text và icon của thiết bị
- */
-function updateUI(deviceKey, isOpenOrOn) {
+function updateUI(deviceKey, isOn) {
     const btn = document.getElementById(`btn-${deviceKey}`);
     const statusText = document.getElementById(`status-${deviceKey}`);
     const icon = document.getElementById(`icon-${deviceKey}`);
     const config = deviceConfigs[deviceKey];
-
     if (!config) return;
 
     if (btn) {
-        if (isOpenOrOn) {
-            btn.classList.remove('btn-success');
-            btn.classList.add('btn-danger');
-            btn.textContent = config.onText;
-        } else {
-            btn.classList.remove('btn-danger');
-            btn.classList.add('btn-success');
-            btn.textContent = config.offText;
-        }
+        btn.classList.toggle('btn-danger', isOn);
+        btn.classList.toggle('btn-success', !isOn);
+        btn.textContent = isOn ? config.onText : config.offText;
     }
-
-    if (statusText) {
-        statusText.textContent = isOpenOrOn ? config.statusOn : config.statusOff;
-    }
-
-    if (icon) {
-        icon.className = isOpenOrOn ? config.iconOn : config.iconOff;
-    }
+    if (statusText) statusText.textContent = isOn ? config.statusOn : config.statusOff;
+    if (icon) icon.className = isOn ? config.iconOn : config.iconOff;
 }
 
-/**
- * Thay đổi trạng thái On/Off thiết bị khi bấm nút
- */
 function toggleDevice(deviceKey) {
-    if (!(deviceKey in deviceStates)) return;
+    const config = deviceConfigs[deviceKey];
+    if (!config) return;
 
     const newState = !deviceStates[deviceKey];
-
-    rtdb.ref(`smart_house/${deviceKey}`).set(newState)
-        .then(() => {
-            console.log(`Cập nhật ${deviceKey}: ${newState}`);
-        })
-        .catch((error) => {
-            console.error(`Lỗi cập nhật ${deviceKey}:`, error);
-        });
+    rtdb.ref(config.path).set(newState)
+        .then(() => console.log(`Cập nhật ${deviceKey}: ${newState}`))
+        .catch((error) => console.error(`Lỗi cập nhật ${deviceKey}:`, error));
 }
 
 // ==========================================
-// 5. Chuyển đổi Tab Panel (Sidebar)
+// 5. Sidebar Navigation Tabs
 // ==========================================
 function showPanel(panelId, element) {
-    const panels = document.querySelectorAll('.panel');
-    panels.forEach(panel => panel.classList.remove('active'));
-
-    const buttons = document.querySelectorAll('.nav-btn');
-    buttons.forEach(button => button.classList.remove('active'));
-
-    const targetPanel = document.getElementById(panelId);
-    if (targetPanel) {
-        targetPanel.classList.add('active');
-    }
-
-    if (element) {
-        element.classList.add('active');
-    }
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    const target = document.getElementById(panelId);
+    if (target) target.classList.add('active');
+    if (element) element.classList.add('active');
 }
