@@ -176,6 +176,18 @@ body {
     min-height: 300px;
 }
 
+/* Alerts Layout */
+#alert-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#alert-container .alert {
+    margin-bottom: 0;
+    border-radius: var(--radius);
+}
+
 /* Controls Grid */
 .controls-grid {
     display: grid;
@@ -269,7 +281,7 @@ body {
     font-weight: 500;
 }
 
-/* Responsive */
+/* Responsive Styles */
 @media (max-width: 768px) {
     .app-container {
         flex-direction: column;
@@ -303,5 +315,18 @@ body {
 
     .controls-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 576px) {
+    #alert-container .alert {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    
+    #alert-container .alert button {
+        width: 100%;
+        margin-top: 10px;
+        margin-left: 0 !important;
     }
 }
