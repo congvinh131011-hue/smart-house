@@ -63,10 +63,16 @@
                     <p class="subtitle">Hướng dẫn sử dụng hệ thống</p>
                 </div>
                 <div class="panel-body">
-                    <p>Chào mừng bạn đến với hệ thống Smart House! Dưới đây là hướng dẫn sử dụng các chức năng của hệ thống:</p>
+                    <p>Chào mừng bạn đến với hệ thống Smart House! Dưới đây là hướng dẫn sử dụng các chức năng của hệ
+                        thống:</p>
                     <ul>
-                        <li>Truy cập vào mục <strong>Functional</strong> để theo dõi trạng thái và điều khiển thiết bị.</li>
-                        <li>Khi có cảnh báo <strong>Cháy</strong> hoặc <strong>Hồ bơi</strong>, hệ thống sẽ hiển thị bảng thông báo khẩn cấp cùng nút tắt cảnh báo.</li>
+                        <li>Truy cập vào mục <strong>Functional</strong> để theo dõi trạng thái và điều khiển thiết bị.
+                        </li>
+                        <li>Khi có cảnh báo <strong>Cháy (Khói)</strong>, <strong>Hồ bơi</strong>, hoặc
+                            <strong>Mưa</strong>, hệ thống sẽ hiển thị bảng thông báo khẩn cấp cùng nút tắt cảnh báo.
+                        </li>
+                        <li>Khi bấm <strong>Tắt cảnh báo</strong>, trạng thái cảm biến trên Firebase sẽ tự động chuyển
+                            về <code>false</code>.</li>
                     </ul>
                 </div>
             </section>
@@ -78,25 +84,29 @@
                     <p class="subtitle">Bảng điều khiển & Chức năng hệ thống</p>
                 </div>
                 <div class="panel-body">
-
-                    <!-- Khu vực cảnh báo Khẩn cấp (Cháy & Hồ bơi) -->
+                    <!-- Khu vực cảnh báo Khẩn cấp & Cảm biến -->
                     <div id="alert-container" class="mb-4">
-                        <!-- Cảnh báo cháy -->
-                        <div id="alert-fire" class="alert alert-danger align-items-center justify-content-between d-none shadow-sm" role="alert">
+                        <!-- 1. Cảnh báo cháy / khói -->
+                        <div id="alert-fire"
+                            class="alert alert-danger align-items-center justify-content-between d-none shadow-sm flex-wrap gap-2"
+                            role="alert">
                             <div class="d-flex align-items-center">
                                 <i class="fa-solid fa-fire-flame-curved fa-bounce me-3 fs-3"></i>
                                 <div>
                                     <h5 class="alert-heading mb-1 fw-bold">CẢNH BÁO CHÁY!</h5>
-                                    <span>Hệ thống phát hiện nhiệt độ/khói bất thường trong nhà!</span>
+                                    <span>Phát hiện khói/nhiệt độ bất thường trong nhà!</span>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-outline-danger bg-white text-danger fw-bold ms-3" onclick="dismissAlert('fired')">
+                            <button type="button" class="btn btn-outline-danger bg-white text-danger fw-bold ms-auto"
+                                onclick="dismissAlert('isSmoke')">
                                 <i class="fa-solid fa-bell-slash me-1"></i> Tắt cảnh báo
                             </button>
                         </div>
 
-                        <!-- Cảnh báo hồ bơi -->
-                        <div id="alert-water" class="alert alert-warning align-items-center justify-content-between d-none shadow-sm" role="alert">
+                        <!-- 2. Cảnh báo hồ bơi -->
+                        <div id="alert-water"
+                            class="alert alert-warning align-items-center justify-content-between d-none shadow-sm flex-wrap gap-2"
+                            role="alert">
                             <div class="d-flex align-items-center">
                                 <i class="fa-solid fa-person-swimming fa-fade me-3 fs-3"></i>
                                 <div>
@@ -104,7 +114,43 @@
                                     <span>Phát hiện có người/chuyển động tại khu vực hồ bơi!</span>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-outline-warning text-dark bg-white fw-bold ms-3" onclick="dismissAlert('water')">
+                            <button type="button" class="btn btn-outline-warning text-dark bg-white fw-bold ms-auto"
+                                onclick="dismissAlert('isInRange')">
+                                <i class="fa-solid fa-bell-slash me-1"></i> Tắt cảnh báo
+                            </button>
+                        </div>
+
+                        <!-- 3. Cảnh báo mưa -->
+                        <div id="alert-rain"
+                            class="alert alert-info align-items-center justify-content-between d-none shadow-sm flex-wrap gap-2"
+                            role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fa-solid fa-cloud-showers-heavy fa-bounce me-3 fs-3"></i>
+                                <div>
+                                    <h5 class="alert-heading mb-1 fw-bold">CẢNH BÁO MƯA!</h5>
+                                    <span>Hệ thống phát hiện trời đang có mưa!</span>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-info text-dark bg-white fw-bold ms-auto"
+                                onclick="dismissAlert('isRain')">
+                                <i class="fa-solid fa-bell-slash me-1"></i> Tắt cảnh báo
+                            </button>
+                        </div>
+
+                        <!-- 4. Alert riêng cho ĐÈN NGỦ -->
+                        <!-- Cảnh báo Đèn ngủ đang bật -->
+                        <div id="alert-nightlight"
+                            class="alert alert-warning align-items-center justify-content-between d-none shadow-sm flex-wrap gap-2"
+                            role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fa-solid fa-moon fa-bounce me-3 fs-3 text-warning"></i>
+                                <div>
+                                    <h5 class="alert-heading mb-1 fw-bold">THÔNG BÁO ĐÈN NGỦ</h5>
+                                    <span>Đèn ngủ đang được bật!</span>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-warning text-dark bg-white fw-bold ms-auto"
+                                onclick="dismissAlert('isLighting')">
                                 <i class="fa-solid fa-bell-slash me-1"></i> Tắt cảnh báo
                             </button>
                         </div>
@@ -112,38 +158,29 @@
 
                     <!-- Bảng điều khiển thiết bị -->
                     <div class="controls-grid">
-
-                        <!-- Card 1: Cửa chính -->
-                        <div class="control-card">
-                            <div class="card-icon"><i class="fa-solid fa-door-closed" id="icon-door"></i></div>
-                            <div class="card-info">
-                                <h3>Cửa chính</h3>
-                                <p class="status-text" id="status-door">Trạng thái: Đang đóng</p>
-                            </div>
-                            <button type="button" class="btn btn-success action-btn w-100" id="btn-door" onclick="toggleDevice('door')">Mở cửa</button>
-                        </div>
-
-                        <!-- Card 2: Bạt che mưa -->
+                        <!-- Card 1: Bạt che mưa -->
                         <div class="control-card">
                             <div class="card-icon"><i class="fa-solid fa-umbrella" id="icon-canvas"></i></div>
                             <div class="card-info">
                                 <h3>Bạt che mưa</h3>
                                 <p class="status-text" id="status-canvas">Trạng thái: Đã thu lại</p>
                             </div>
-                            <button type="button" class="btn btn-success action-btn w-100" id="btn-canvas" onclick="toggleDevice('canvas')">Kéo bạt</button>
+                            <button type="button" class="btn btn-success action-btn w-100" id="btn-canvas"
+                                onclick="toggleDevice('canvas')">Kéo bạt</button>
                         </div>
 
-                        <!-- Card 3: Đèn hệ thống -->
+                        <!-- Card 2: Đèn hệ thống -->
                         <div class="control-card">
                             <div class="card-icon"><i class="fa-regular fa-lightbulb" id="icon-light"></i></div>
                             <div class="card-info">
                                 <h3>Đèn hệ thống</h3>
                                 <p class="status-text" id="status-light">Trạng thái: Đã tắt</p>
                             </div>
-                            <button type="button" class="btn btn-success action-btn w-100" id="btn-light" onclick="toggleDevice('light')">Bật đèn</button>
+                            <button type="button" class="btn btn-success action-btn w-100" id="btn-light"
+                                onclick="toggleDevice('light')">Bật đèn</button>
                         </div>
-
                     </div>
+
                 </div>
             </section>
 
@@ -177,8 +214,10 @@
     </footer>
 
     <!-- Firebase Realtime Database SDK (Compat) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/12.15.0/firebase-app-compat.min.js" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/12.15.0/firebase-database-compat.min.js" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/12.15.0/firebase-app-compat.min.js"
+        referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/12.15.0/firebase-database-compat.min.js"
+        referrerpolicy="no-referrer"></script>
 
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
