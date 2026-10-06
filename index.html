@@ -158,15 +158,18 @@
 
                     <!-- Bảng điều khiển thiết bị -->
                     <div class="controls-grid">
-                        <!-- Card 1: Bạt che mưa -->
+                        <!-- Card 1: Bạt che mưa (3 trạng thái) -->
                         <div class="control-card">
                             <div class="card-icon"><i class="fa-solid fa-umbrella" id="icon-canvas"></i></div>
                             <div class="card-info">
                                 <h3>Bạt che mưa</h3>
-                                <p class="status-text" id="status-canvas">Trạng thái: Đã thu lại</p>
+                                <p class="status-text" id="status-canvas">Trạng thái: Đang dừng</p>
                             </div>
-                            <button type="button" class="btn btn-success action-btn w-100" id="btn-canvas"
-                                onclick="toggleDevice('canvas')">Kéo bạt</button>
+                            <div class="d-flex gap-2 w-100 mt-2">
+                                <button type="button" class="btn btn-success flex-fill fw-bold px-2" onclick="setCanvasState(1)">Kéo bạt</button>
+                                <button type="button" class="btn btn-secondary flex-fill fw-bold px-2" onclick="setCanvasState(0)">Dừng</button>
+                                <button type="button" class="btn btn-danger flex-fill fw-bold px-2" onclick="setCanvasState(-1)">Thu bạt</button>
+                            </div>
                         </div>
 
                         <!-- Card 2: Đèn hệ thống -->
