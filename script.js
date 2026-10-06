@@ -39,6 +39,9 @@ const rootRef = rtdb.ref();
 // ==========================================
 rootRef.on('value', (snapshot) => {
     const data = snapshot.val();
+    // debug
+    console.log("Firebase nhận cục data mới:", data);  
+    
     if (!data) return;
 
     const control = data.Control || {};
