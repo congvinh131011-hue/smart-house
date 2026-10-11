@@ -1,20 +1,11 @@
 // ==========================================
 // 1. Config
 // ==========================================
-const deviceConfigs = {
-    light: {
-        path: 'Control/Light State',
-        onText: "Tắt đèn", offText: "Bật đèn",
-        statusOn: "Trạng thái: Đã bật", statusOff: "Trạng thái: Đã tắt",
-        iconOn: "fa-solid fa-lightbulb text-warning", iconOff: "fa-regular fa-lightbulb"
-    }
-};
-
 const sensorConfigs = {
-    isRain:     { on: "Đang có mưa",          off: "Trời không mưa" },
-    isLighting: { on: "Đèn ngủ đang bật",     off: "Đèn ngủ đang tắt" },
+    isRain:     { on: "Đang có mưa",        off: "Trời không mưa" },
+    isLighting: { on: "Đèn ngủ đang bật",    off: "Đèn ngủ đang tắt" },
     isInRange:  { on: "Có người trong vùng",  off: "Không có ai" },
-    isSmoke:    { on: "Phát hiện khói!",      off: "Bình thường" }
+    isSmoke:    { on: "Phát hiện khói!",     off: "Bình thường" }
 };
 
 const alertConfigs = {
@@ -24,7 +15,6 @@ const alertConfigs = {
     isLighting: 'alert-nightlight'
 };
 
-const deviceStates = { light: false };
 const rootRef = rtdb.ref();
 
 // ==========================================
@@ -39,14 +29,25 @@ rootRef.on('value', (snapshot) => {
     const control = data.Control || {};
     const sensor = data.Sensor || {};
 
-    // Cập nhật trạng thái thiết bị bật/tắt (Light)
-    Object.keys(deviceConfigs).forEach((key) => {
-        const dbKey = deviceConfigs[key].path.split('/')[1];
-        if (control[dbKey] !== undefined) {
-            deviceStates[key] = control[dbKey];
-            updateUI(key, deviceStates[key]);
+    // Cập nhật trạng thái Đèn hệ thống (Light State: 1, 0, -1)
+    if (control['Light State'] !== undefined) {
+        const lightState = control['Light State'];
+        const statusLight = document.getElementById('status-light');
+        const iconLight = document.getElementById('icon-light');
+        
+        if (statusLight && iconLight) {
+            if (lightState === 1) {
+                statusLight.textContent = "Trạng thái: Đã bật";
+                iconLight.className = "fa-solid fa-lightbulb text-warning fa-beat-fade";
+            } else if (lightState === -1) {
+                statusLight.textContent = "Trạng thái: Đã tắt";
+                iconLight.className = "fa-regular fa-lightbulb text-secondary";
+            } else {
+                statusLight.textContent = "Trạng thái: Tự động (Auto)";
+                iconLight.className = "fa-solid fa-lightbulb text-info";
+            }
         }
-    });
+    }
 
     // Cập nhật trạng thái Bạt che mưa (Roof State: 1, 0, -1)
     if (control['Roof State'] !== undefined) {
@@ -57,10 +58,10 @@ rootRef.on('value', (snapshot) => {
         if (statusCanvas && iconCanvas) {
             if (roofState === 1) {
                 statusCanvas.textContent = "Trạng thái: Đang kéo ra";
-                iconCanvas.className = "fa-solid fa-umbrella text-success fa-beat-fade"; // Thêm hiệu ứng nhấp nháy khi kéo
+                iconCanvas.className = "fa-solid fa-umbrella text-success fa-beat-fade";
             } else if (roofState === -1) {
                 statusCanvas.textContent = "Trạng thái: Đang thu lại";
-                iconCanvas.className = "fa-solid fa-umbrella text-danger fa-beat-fade"; // Thêm hiệu ứng nhấp nháy khi thu
+                iconCanvas.className = "fa-solid fa-umbrella text-danger fa-beat-fade";
             } else {
                 statusCanvas.textContent = "Trạng thái: Đang dừng";
                 iconCanvas.className = "fa-solid fa-umbrella text-secondary";
@@ -108,33 +109,14 @@ function dismissAlert(sensorKey) {
 // ==========================================
 // 4. Device Control
 // ==========================================
-function updateUI(deviceKey, isOn) {
-    const btn = document.getElementById(`btn-${deviceKey}`);
-    const statusText = document.getElementById(`status-${deviceKey}`);
-    const icon = document.getElementById(`icon-${deviceKey}`);
-    const config = deviceConfigs[deviceKey];
-    if (!config) return;
-
-    if (btn) {
-        btn.classList.toggle('btn-danger', isOn);
-        btn.classList.toggle('btn-success', !isOn);
-        btn.textContent = isOn ? config.onText : config.offText;
-    }
-    if (statusText) statusText.textContent = isOn ? config.statusOn : config.statusOff;
-    if (icon) icon.className = isOn ? config.iconOn : config.iconOff;
+// Điều khiển đèn hệ thống (3 trạng thái: 1, 0, -1)
+function setLightState(stateValue) {
+    rtdb.ref('Control/Light State').set(stateValue)
+        .then(() => console.log(`Cập nhật Light State: ${stateValue}`))
+        .catch((error) => console.error(`Lỗi cập nhật Light State:`, error));
 }
 
-function toggleDevice(deviceKey) {
-    const config = deviceConfigs[deviceKey];
-    if (!config) return;
-
-    const newState = !deviceStates[deviceKey];
-    rtdb.ref(config.path).set(newState)
-        .then(() => console.log(`Cập nhật ${deviceKey}: ${newState}`))
-        .catch((error) => console.error(`Lỗi cập nhật ${deviceKey}:`, error));
-}
-
-// Điều khiển bạt che mưa (3 trạng thái)
+// Điều khiển bạt che mưa (3 trạng thái: 1, 0, -1)
 function setCanvasState(stateValue) {
     rtdb.ref('Control/Roof State').set(stateValue)
         .then(() => console.log(`Cập nhật Roof State: ${stateValue}`))
