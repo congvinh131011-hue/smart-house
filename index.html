@@ -63,18 +63,12 @@
                     <p class="subtitle">Hướng dẫn sử dụng hệ thống</p>
                 </div>
                 <div class="panel-body">
-                    <p>Chào mừng bạn đến với hệ thống Smart House! Dưới đây là hướng dẫn sử dụng các chức năng của hệ
-                        thống:</p>
+                    <p>Chào mừng bạn đến với hệ thống Smart House! Dưới đây là hướng dẫn sử dụng các chức năng của hệ thống:</p>
                     <ul>
-                        <li>Truy cập vào mục <strong>Functional</strong> để theo dõi trạng thái và điều khiển thiết bị.
-                        </li>
-                        <li>Khi có cảnh báo <strong>Cháy (Khói)</strong>, <strong>Hồ bơi</strong>, hoặc
-                            <strong>Mưa</strong>, hệ thống sẽ hiển thị bảng thông báo khẩn cấp cùng nút tắt cảnh báo.
-                        </li>
-                        <li>Khi bấm <strong>Tắt cảnh báo</strong>, trạng thái cảm biến trên hệ thống sẽ tự động chuyển
-                            về <strong>false</strong>.</li>
-                        <li>Trong mục <strong>Functional</strong>, bạn có thể điều khiển các thiết bị như <strong>Bạt che
-                                mưa</strong> và <strong>Đèn hệ thống</strong> bằng các nút bấm tương ứng.</li>
+                        <li>Truy cập vào mục <strong>Functional</strong> để theo dõi trạng thái và điều khiển thiết bị.</li>
+                        <li>Khi có cảnh báo <strong>Cháy (Khói)</strong>, <strong>Hồ bơi</strong>, hoặc <strong>Mưa</strong>, hệ thống sẽ hiển thị bảng thông báo khẩn cấp cùng nút tắt cảnh báo.</li>
+                        <li>Khi bấm <strong>Tắt cảnh báo</strong>, trạng thái cảm biến trên hệ thống sẽ tự động chuyển về <strong>false</strong>.</li>
+                        <li>Trong mục <strong>Functional</strong>, bạn có thể điều khiển các thiết bị như <strong>Bạt che mưa</strong> và <strong>Đèn hệ thống</strong> với 3 chế độ: Bật, Tự động (Auto) và Tắt.</li>
                     </ul>
                 </div>
             </section>
@@ -140,7 +134,6 @@
                         </div>
 
                         <!-- 4. Alert riêng cho ĐÈN NGỦ -->
-                        <!-- Cảnh báo Đèn ngủ đang bật -->
                         <div id="alert-nightlight"
                             class="alert alert-warning align-items-center justify-content-between d-none shadow-sm flex-wrap gap-2"
                             role="alert">
@@ -174,15 +167,18 @@
                             </div>
                         </div>
 
-                        <!-- Card 2: Đèn hệ thống -->
+                        <!-- Card 2: Đèn hệ thống (3 trạng thái) -->
                         <div class="control-card">
                             <div class="card-icon"><i class="fa-regular fa-lightbulb" id="icon-light"></i></div>
                             <div class="card-info">
                                 <h3>Đèn hệ thống</h3>
                                 <p class="status-text" id="status-light">Trạng thái: Đã tắt</p>
                             </div>
-                            <button type="button" class="btn btn-success action-btn w-100" id="btn-light"
-                                onclick="toggleDevice('light')">Bật đèn</button>
+                            <div class="d-flex gap-2 w-100 mt-2">
+                                <button type="button" class="btn btn-success flex-fill fw-bold px-2" onclick="setLightState(1)">Bật đèn</button>
+                                <button type="button" class="btn btn-secondary flex-fill fw-bold px-2" onclick="setLightState(0)">Auto</button>
+                                <button type="button" class="btn btn-danger flex-fill fw-bold px-2" onclick="setLightState(-1)">Tắt đèn</button>
+                            </div>
                         </div>
                     </div>
 
